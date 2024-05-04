@@ -23,12 +23,16 @@ public class ClickerGame extends JFrame {
     private final int HEIGHT = 600;
     private final Point bossCenter = new Point(WIDTH / 2, HEIGHT / 2); // Updated to exact center point for the boss
     private final int bossRadius = 50; // Boss radius
+    private List<Particle> particles;
+
 
     public ClickerGame() {
         setTitle("Clicker Game");
         setSize(WIDTH, HEIGHT);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
+        particles = new ArrayList<>();
+
 
         clickButton = new JButton("Spawn Small Circle");
         clickButton.addActionListener(new ActionListener() {
@@ -51,12 +55,17 @@ public class ClickerGame extends JFrame {
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 g.setColor(Color.RED);
-                g.fillOval(bossCenter.x - 50, bossCenter.y - 50, bossRadius*2, bossRadius*2); // Drawing the boss
+                g.fillOval(bossCenter.x - 50, bossCenter.y - 50, bossRadius*2, bossRadius*2);
                 g.setColor(Color.BLUE);
                 smallCircles.forEach(point -> g.fillOval(point.x, point.y, 10, 10));
                 g.setColor(Color.GREEN);
                 projectiles.forEach(point -> g.fillOval(point.x, point.y, 5, 5));
+
+                // Draw particles
+                particles.forEach(particle -> particle.draw(g));
             }
+
+
         };
         gamePanel.setPreferredSize(new Dimension(WIDTH, HEIGHT));
 
@@ -104,6 +113,21 @@ public class ClickerGame extends JFrame {
                 gamePanel.repaint();
             }
         }).start();
+        // Timer to update and redraw particles
+        new Timer(33, new ActionListener() { // Assuming ~30 FPS
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Iterator<Particle> particleIterator = particles.iterator();
+                while (particleIterator.hasNext()) {
+                    Particle particle = particleIterator.next();
+                    if (!particle.update()) {
+                        particleIterator.remove();
+                    }
+                }
+                gamePanel.repaint();
+            }
+        }).start();
+
 
         setVisible(true);
     }
@@ -111,27 +135,34 @@ public class ClickerGame extends JFrame {
 
     private void moveProjectiles() {
         Iterator<Point> iterator = projectiles.iterator();
+        Random rand = new Random();
         while (iterator.hasNext()) {
             Point p = iterator.next();
-            // Calculate direction towards the boss center
             int dx = bossCenter.x - p.x;
             int dy = bossCenter.y - p.y;
-            // Normalize the direction
             double dist = Math.sqrt(dx * dx + dy * dy);
             dx = (int) (dx / dist * 5); // Move speed of 5 pixels per tick
             dy = (int) (dy / dist * 5);
 
-            // Update the projectile position
             p.translate(dx, dy);
 
-            // Check if projectile hits the boss (within radius of 50 pixels of the center of the boss)
             if (Math.sqrt(Math.pow(p.x - bossCenter.x, 2) + Math.pow(p.y - bossCenter.y, 2)) < 50) {
                 health -= 1; // Damage the boss
                 iterator.remove(); // Remove the projectile
+
+                // Spawn particles at the hit location
+                for (int i = 0; i < 10; i++) {
+                    int velX = rand.nextInt(10) - 5; // Random velocity X between -5 and 5
+                    int velY = rand.nextInt(10) - 5; // Random velocity Y between -5 and 5
+                    particles.add(new Particle(new Point(p.x, p.y), velX, velY));
+                }
+
                 healthLabel.setText("Health: " + health);
             }
         }
     }
+
+
 
     public static void main(String[] args) {
         new ClickerGame();
