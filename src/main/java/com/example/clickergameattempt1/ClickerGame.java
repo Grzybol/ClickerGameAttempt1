@@ -12,6 +12,7 @@ import java.util.Random;
 public class ClickerGame extends JFrame {
     private int health = 1000;
     private int startHealth = 1000;
+    private int deathCount =0;
     private JButton clickButton;
     private JLabel healthLabel;
     private JPanel gamePanel;
@@ -21,6 +22,7 @@ public class ClickerGame extends JFrame {
     private final int WIDTH = 800;
     private final int HEIGHT = 600;
     private final Point bossCenter = new Point(WIDTH / 2, HEIGHT / 2); // Updated to exact center point for the boss
+    private final int bossRadius = 50; // Boss radius
 
     public ClickerGame() {
         setTitle("Clicker Game");
@@ -32,8 +34,11 @@ public class ClickerGame extends JFrame {
         clickButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                int x = random.nextInt(WIDTH - 50);
-                int y = random.nextInt(HEIGHT - 50);
+                int x, y;
+                do {
+                    x = random.nextInt(WIDTH - 50);
+                    y = random.nextInt(HEIGHT - 50);
+                } while (Math.sqrt(Math.pow(x - bossCenter.x, 2) + Math.pow(y - bossCenter.y, 2)) < 2 * bossRadius);
                 smallCircles.add(new Point(x, y));
             }
         });
@@ -46,7 +51,7 @@ public class ClickerGame extends JFrame {
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 g.setColor(Color.RED);
-                g.fillOval(bossCenter.x - 50, bossCenter.y - 50, 100, 100); // Drawing the boss
+                g.fillOval(bossCenter.x - 50, bossCenter.y - 50, bossRadius*2, bossRadius*2); // Drawing the boss
                 g.setColor(Color.BLUE);
                 smallCircles.forEach(point -> g.fillOval(point.x, point.y, 10, 10));
                 g.setColor(Color.GREEN);
@@ -89,10 +94,12 @@ public class ClickerGame extends JFrame {
                     health -= smallCircles.size();
                     healthLabel.setText("Health: " + Math.max(0, health));
                 } else {
-                    health = 2000; // Reset health to 2000
+                    deathCount++;
+                    health = (int) ((int) startHealth*Math.pow(2, deathCount));
                     projectiles.clear();
                     smallCircles.clear();
                     healthLabel.setText("Health: " + health);
+
                 }
                 gamePanel.repaint();
             }
